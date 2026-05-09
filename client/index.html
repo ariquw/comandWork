@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Совместная доска</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div v-if="!isConnected">
+      <h1>Совместная доска</h1>
+      <button v-on:click="createBoard">Создать новую доску</button>
+      <p v-if="boardId">Доска создана: {{ boardId }}</p>
+      <p v-if="error" style="color: red;">{{ error }}</p>
+    </div>
+
+    <div v-else>
+      <p>Доска: {{ boardId }}</p>
+      <p>Пользователей: {{ connectedUsers }}</p>
+      <canvas ref="canvas" width="800" height="600" style="border: 1px solid black;"></canvas>
+    </div>
+  </div>
+
+  <script>
+  const { createApp } = Vue;
+
+  createApp({
+    data() {
+      return {
+        socket: null,
+        isConnected: false,
+        boardId: null,
+        connectedUsers: 0,
+        error: null,
+        objects: []
+      };
+    },
+
+    methods: {
+      async createBoard() {
+        this.error = null;
+        try {
+          const res = await fetch('http://localhost:3000/api/board', {
+            method: 'POST'
+          });
+          const data = await res.json();
+          if (data.boardId) {
+            this.connectToBoard(data.boardId);
+          } else {
+            this.error = 'Не удалось создать доску';
+          }
+        } catch (e) {
+          this.error = 'Сервер недоступен';
+        }
+      },
+
+      connectToBoard(boardId) {
+        this.boardId = boardId;
+        this.socket = io('http://localhost:3000');
+
+        this.socket.on('connect', function() {
+          this.isConnected = true;
+          this.socket.emit('board:join', boardId);
+        }.bind(this));
+
+        this.socket.on('board:state', function(state) {
+          this.objects = state.objects || [];
+          this.connectedUsers = state.connectedUsers;
+        }.bind(this));
+
+        this.socket.on('user:joined', function(data) {
+          this.connectedUsers = data.totalUsers;
+        }.bind(this));
+
+        this.socket.on('user:left', function(data) {
+          this.connectedUsers = data.totalUsers;
+        }.bind(this));
+      }
+    }
+  }).mount('#app');
+  </script>
+</body>
+</html>
