@@ -26,6 +26,14 @@ class Store {
 
   addObject(boardId, objectData) {
     const board = this.getBoard(boardId);
+    
+    const validTypes = ['rectangle', 'circle', 'triangle', 'line', 'text', 'image'];
+    if (!validTypes.includes(objectData.type)) {
+      const error = new Error('Недопустимый тип объекта: ' + objectData.type);
+      error.status = 400;
+      throw error;
+    }
+
     const newObject = {
       id: this.generateId(),
       type: objectData.type,
@@ -41,8 +49,51 @@ class Store {
       imageUrl: objectData.imageUrl || '',
       createdAt: Date.now()
     };
+    
     board.objects.push(newObject);
     return newObject;
+  }
+
+  updateObject(boardId, objectId, updates) {
+    const board = this.getBoard(boardId);
+    const index = board.objects.findIndex(function(obj) {
+      return obj.id === objectId;
+    });
+    
+    if (index === -1) {
+      const error = new Error('Объект не найден');
+      error.status = 404;
+      throw error;
+    }
+    
+    board.objects[index] = {
+      ...board.objects[index],
+      ...updates,
+      id: objectId,
+      updatedAt: Date.now()
+    };
+    
+    return board.objects[index];
+  }
+
+  deleteObject(boardId, objectId) {
+    const board = this.getBoard(boardId);
+    const index = board.objects.findIndex(function(obj) {
+      return obj.id === objectId;
+    });
+    
+    if (index === -1) {
+      const error = new Error('Объект не найден');
+      error.status = 404;
+      throw error;
+    }
+    
+    board.objects.splice(index, 1);
+    return true;
+  }
+
+  getObjects(boardId) {
+    return this.getBoard(boardId).objects;
   }
 
   generateId() {
