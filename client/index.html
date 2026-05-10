@@ -25,6 +25,7 @@
       <div v-if="error" class="error">{{ error }}</div>
     </div>
 
+    <!-- Второй экран: подключены к доске -->
     <div v-else class="board-layout">
       <div class="topbar">
         <div class="board-info">
@@ -458,8 +459,7 @@
               ctx.fillStyle = obj.color || '#000000';
               ctx.font = (obj.fontSize || 16) + 'px Arial';
               ctx.textBaseline = 'top';
-              let lineY = obj.y;
-              ctx.fillText(obj.text || '', obj.x, lineY);
+              ctx.fillText(obj.text || '', obj.x, obj.y);
             } else if (obj.type === 'image') {
               if (obj.imageUrl) {
                 const img = new Image();
