@@ -24,33 +24,35 @@ class Store {
     return board;
   }
 
-addObject(boardId, objectData) {
-  const board = this.getBoard(boardId);
-  
-  const validTypes = ['rectangle', 'circle', 'triangle', 'line', 'text', 'image'];
-  if (!validTypes.includes(objectData.type)) {
-    throw new Error('Invalid object type');
-  }
+  addObject(boardId, objectData) {
+    const board = this.getBoard(boardId);
+    
+    const validTypes = ['rectangle', 'circle', 'triangle', 'line', 'text', 'image'];
+    if (!validTypes.includes(objectData.type)) {
+      const error = new Error('Недопустимый тип объекта: ' + objectData.type);
+      error.status = 400;
+      throw error;
+    }
 
-  const newObject = {
-    id: this.generateId(),
-    type: objectData.type,
-    x: Number(objectData.x) || 100,
-    y: Number(objectData.y) || 100,
-    width: Number(objectData.width) || 150,
-    height: Number(objectData.height) || 100,
-    color: objectData.color || '#000000',
-    lineWidth: Number(objectData.lineWidth) || 2,
-    fillColor: objectData.fillColor || '#ffffff',
-    text: objectData.text || 'Text',
-    fontSize: Number(objectData.fontSize) || 16,
-    imageUrl: objectData.imageUrl || '',
-    createdAt: Date.now()
-  };
-  
-  board.objects.push(newObject);
-  return newObject;
-}
+    const newObject = {
+      id: this.generateId(),
+      type: objectData.type,
+      x: Number(objectData.x) || 100,
+      y: Number(objectData.y) || 100,
+      width: Number(objectData.width) || 150,
+      height: Number(objectData.height) || 100,
+      color: objectData.color || '#000000',
+      lineWidth: Number(objectData.lineWidth) || 2,
+      fillColor: objectData.fillColor || '#ffffff',
+      text: objectData.text || 'Текст',
+      fontSize: Number(objectData.fontSize) || 16,
+      imageUrl: objectData.imageUrl || '',
+      createdAt: Date.now()
+    };
+    
+    board.objects.push(newObject);
+    return newObject;
+  }
 
   updateObject(boardId, objectId, updates) {
     const board = this.getBoard(boardId);
