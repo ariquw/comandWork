@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Совместная доска</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Первый экран: не подключены -->
+    <div v-if="!isConnected" class="welcome-screen">
+      <h1>Совместная доска</h1>
+      <p>Создайте новую доску или подключитесь к существующей</p>
+      <button @click="createBoard" :disabled="loading">
+        <span v-if="loading">Создание...</span>
+        <span v-else>Создать новую доску</span>
+      </button>
+      <div class="divider"><span>или</span></div>
+      <div class="join-form">
+        <input v-model="joinBoardId" placeholder="Введите ID доски" @keyup.enter="joinBoard" />
+        <button @click="joinBoard" :disabled="!joinBoardId">Подключиться</button>
+      </div>
+      <div v-if="error" class="error">{{ error }}</div>
+    </div>
+
+    <!-- Второй экран: подключены к доске -->
+    <div v-else class="board-layout">
+      <div class="topbar">
+        <div class="board-info">
+          <span>Доска: {{ boardId }}</span>
+          <span class="user-count">Пользователей: {{ connectedUsers }}</span>
+        </div>
+        <button @click="disconnect">Покинуть доску</button>
+      </div>
+
+      <div class="main-area">
+        <div class="toolbar">
+          <div class="tool-group">
+            <button 
+              v-for="tool in tools" 
+              :key="tool.type"
+              @click="selectTool(tool.type)"
+              :class="['tool-btn', { active: selectedTool === tool.type }]"
+            >{{ tool.label }}</button>
+          </div>
+        </div>
+        <div class="canvas-container" ref="canvasContainer">
+          <canvas ref="canvas" width="800" height="600"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          socket: null,
+          isConnected: false,
+          boardId: null,
+          joinBoardId: '',
+          connectedUsers: 0,
+          loading: false,
+          error: null,
+          objects: [],
+          selectedTool: 'rectangle',
+          tools: [
+            { type: 'select', label: 'Выбор' },
+            { type: 'rectangle', label: 'Прямоугольник' },
+            { type: 'circle', label: 'Круг' },
+            { type: 'triangle', label: 'Треугольник' },
+            { type: 'line', label: 'Линия' },
+            { type: 'text', label: 'Текст' },
+            { type: 'image', label: 'Изображение' }
+          ]
+        };
+      },
+
+      methods: {
+        selectTool(tool) {
+          this.selectedTool = tool;
+        },
+
+        async createBoard() {
+          this.error = null;
+          this.loading = true;
+          try {
+            const res = await fetch('http://localhost:3000/api/board', {
+              method: 'POST'
+            });
+            const data = await res.json();
+            if (data.boardId) {
+              this.connectToBoard(data.boardId);
+            } else {
+              this.error = 'Не удалось создать доску';
+            }
+          } catch (e) {
+            this.error = 'Сервер недоступен';
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        joinBoard() {
+          if (this.joinBoardId.trim()) {
+            this.connectToBoard(this.joinBoardId.trim());
+          }
+        },
+
+        connectToBoard(boardId) {
+          this.boardId = boardId;
+          this.socket = io('http://localhost:3000');
+
+          this.socket.on('connect', () => {
+            this.isConnected = true;
+            this.socket.emit('board:join', boardId);
+          });
+
+          this.socket.on('board:state', (state) => {
+            this.objects = state.objects || [];
+            this.connectedUsers = state.connectedUsers;
+          });
+
+          this.socket.on('user:joined', (data) => {
+            this.connectedUsers = data.totalUsers;
+          });
+
+          this.socket.on('user:left', (data) => {
+            this.connectedUsers = data.totalUsers;
+          });
+        },
+
+        disconnect() {
+          if (this.socket) {
+            this.socket.disconnect();
+          }
+          this.isConnected = false;
+          this.boardId = null;
+          this.joinBoardId = '';
+          this.objects = [];
+          this.connectedUsers = 0;
+        }
+      },
+
+      beforeUnmount() {
+        if (this.socket) {
+          this.socket.disconnect();
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
