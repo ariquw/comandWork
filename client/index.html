@@ -10,7 +10,6 @@
 </head>
 <body>
   <div id="app">
-    <!-- Первый экран: не подключены -->
     <div v-if="!isConnected" class="welcome-screen">
       <h1>Совместная доска</h1>
       <p>Создайте новую доску или подключитесь к существующей</p>
@@ -26,7 +25,6 @@
       <div v-if="error" class="error">{{ error }}</div>
     </div>
 
-    <!-- Второй экран: подключены к доске -->
     <div v-else class="board-layout">
       <div class="topbar">
         <div class="board-info">
