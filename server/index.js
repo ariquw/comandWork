@@ -57,8 +57,8 @@ app.post('/api/board/:boardId/object', function(req, res) {
   }
 });
 
-app.use(function(req, res) {
-  res.status(404).json({ error: 'Маршрут не найден' });
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
 // WEB SOCKET 
