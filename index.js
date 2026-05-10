@@ -45,16 +45,6 @@ app.get('/api/board/:boardId', function(req, res) {
   }
 });
 
-app.post('/api/board/:boardId/object', (req, res) => {
-  try {
-    const object = store.addObject(req.params.boardId, req.body);
-    io.to(req.params.boardId).emit('object:created', object);
-    res.json({ object });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
 // WebSocket
 io.on('connection', function(socket) {
   console.log('Пользователь подключился:', socket.id);
